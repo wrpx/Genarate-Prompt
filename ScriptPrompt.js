@@ -1,6 +1,45 @@
+/**
+ * Code Collector Script
+ * ====================
+ *
+ * วิธีใช้งาน:
+ * 1. ติดตั้ง Node.js บนเครื่องของคุณ
+ * 2. เปิด Command Prompt หรือ Terminal ในโฟลเดอร์ที่มีไฟล์สคริปต์นี้
+ * 3. รันคำสั่ง: npm install
+ * 4. แก้ไขตัวแปร 'originalPaths' ให้ชี้ไปยังโฟลเดอร์ที่คุณต้องการรวบรวมโค้ด เช่น let originalPaths = ["C:/Users/USER/Desktop/ExpressJs-CRUD"];
+ * 5. รันสคริปต์ด้วยคำสั่ง: node start
+ *
+ * คำอธิบาย:
+ * - สคริปต์นี้จะรวบรวมเนื้อหาของไฟล์โค้ดทั้งหมดในโฟลเดอร์ที่กำหนด
+ * - สร้างโครงสร้างไฟล์ (file tree) ของโปรเจค
+ * - รวมทั้งหมดเป็นไฟล์เดียวและเปิดในโปรแกรม Notepad
+ * - หลังจากปิด Notepad ไฟล์ผลลัพธ์จะถูกลบโดยอัตโนมัติ
+ *
+ * การปรับแต่ง:
+ * - แก้ไข 'allowedExtensions' เพื่อเพิ่มหรือลบนามสกุลไฟล์ที่ต้องการรวบรวม
+ * - แก้ไข 'excludedFolders' เพื่อเพิ่มหรือลบโฟลเดอร์ที่ต้องการข้าม
+ *
+ * หมายเหตุ:
+ * - สคริปต์นี้ทำงานบน Windows เท่านั้น เนื่องจากใช้ Notepad
+ * - สำหรับระบบปฏิบัติการอื่น ให้แก้ไขฟังก์ชัน openNotepadAndDeleteAfterClose
+ */
+
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
+
+const allowedExtensions = [
+  ".js",
+  ".ts",
+  ".java",
+  ".py",
+  ".html",
+  ".css",
+  ".jsx",
+  ".tsx",
+];
+
+const excludedFolders = ["node_modules", ".git", "build", "dist"];
 
 function readFilesFromDirectory(directoryPath) {
   let fileContents = [];
@@ -8,17 +47,12 @@ function readFilesFromDirectory(directoryPath) {
   fs.readdirSync(directoryPath, { withFileTypes: true }).forEach((dirent) => {
     const filePath = path.join(directoryPath, dirent.name);
 
-    if (dirent.isDirectory()) {
+    if (dirent.isDirectory() && !excludedFolders.includes(dirent.name)) {
       fileContents = fileContents.concat(readFilesFromDirectory(filePath));
-    } else {
+    } else if (allowedExtensions.includes(path.extname(dirent.name))) {
       let content = fs.readFileSync(filePath, "utf8");
-      let fileNameWithoutExt = path.basename(
-        dirent.name,
-        path.extname(dirent.name)
-      );
-      content = `//${fileNameWithoutExt}${path.extname(
-        dirent.name
-      )}\n${content}`;
+      let relativeFilePath = path.relative(process.cwd(), filePath);
+      content = `//${relativeFilePath}\n${content}`;
       fileContents.push(content);
     }
   });
@@ -31,13 +65,21 @@ function generateFileTree(directoryPath, prefix = "") {
   const files = fs.readdirSync(directoryPath, { withFileTypes: true });
 
   files.forEach((file, index) => {
+    if (excludedFolders.includes(file.name)) return;
+
     const isLast = index === files.length - 1;
     const newPrefix = prefix + (isLast ? "    " : "|   ");
     const filePath = path.join(directoryPath, file.name);
-    tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
 
-    if (file.isDirectory()) {
-      tree += generateFileTree(filePath, newPrefix);
+    if (
+      file.isDirectory() ||
+      allowedExtensions.includes(path.extname(file.name))
+    ) {
+      tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
+
+      if (file.isDirectory()) {
+        tree += generateFileTree(filePath, newPrefix);
+      }
     }
   });
 
@@ -78,10 +120,7 @@ function openNotepadAndDeleteAfterClose(paths) {
   });
 }
 
-let originalPaths = [
-  "C:/Users/Wiraphat/Desktop/React+Java+PosgreSQL/Java-Spring-Backend/src/main/java/com/example/javaspringbackend",
-  "C:/Users/Wiraphat/Desktop/React+Java+PosgreSQL/React-Frontend/src/route",
-];
+let originalPaths = ["C:/Users/USER/Desktop/ExpressJs-CRUD"];
 
 let outputFiles = originalPaths.map(processDirectory);
 openNotepadAndDeleteAfterClose(outputFiles);
