@@ -6,5 +6,8 @@
   "packages": {},
   "scripts": {
     "start": "node ScriptPrompt.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.1.0"
   }
 }
