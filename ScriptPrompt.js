@@ -120,7 +120,10 @@ function openNotepadAndDeleteAfterClose(paths) {
   });
 }
 
-let originalPaths = ["C:/Users/USER/Desktop/ExpressJs-CRUD"];
+let originalPaths = [
+  // "C:/Users/USER/Desktop/ExpressJs-CRUD",
+  "C:/Users/USER/Desktop/Java-Spring-Backend",
+];
 
 let outputFiles = originalPaths.map(processDirectory);
 openNotepadAndDeleteAfterClose(outputFiles);
