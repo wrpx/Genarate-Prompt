@@ -5,9 +5,10 @@
   "requires": true,
   "packages": {},
   "scripts": {
-    "start": "node ScriptPrompt.js"
+    "start": "ts-node ScriptPrompt.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.1.0"
+    "@types/node": "^22.1.0",
+    "typescript": "^5.5.4"
   }
 }
