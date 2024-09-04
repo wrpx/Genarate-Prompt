@@ -7,7 +7,7 @@
  * 2. เปิด Terminal หรือ Command Prompt ในโฟลเดอร์ที่มีไฟล์สคริปต์นี้
  * 3. แก้ไขตัวแปร 'originalPaths' ให้ชี้ไปยังโฟลเดอร์ที่คุณต้องการรวบรวมโค้ด
  * 4. คอมไพล์สคริปต์ด้วยคำสั่ง: tsc ScriptPrompt.ts
- * 5. รันสคริปต์ด้วยคำสั่ง: node ScriptPrompt.js
+ * 5. รันสคริปต์ด้วยคำสั่ง: node ScriptPrompt.js 
  *
  * คำอธิบาย:
  * - สคริปต์นี้จะรวบรวมเนื้อหาของไฟล์โค้ดทั้งหมดในโฟลเดอร์ที่กำหนด
@@ -31,7 +31,13 @@ const allowedExtensions: string[] = [
   ".go",
 ];
 
-const excludedFolders: string[] = ["node_modules", ".git", "build", "dist", ".config"];
+const excludedFolders: string[] = [
+  "node_modules",
+  ".git",
+  "build",
+  "dist",
+  ".config",
+];
 const excludedFiles: string[] = ["postcss.config.js"];
 
 function readFilesFromDirectory(directoryPath: string): string[] {
@@ -58,10 +64,16 @@ function readFilesFromDirectory(directoryPath: string): string[] {
 
 function generateFileTree(directoryPath: string, prefix: string = ""): string {
   let tree: string = "";
-  const files: fs.Dirent[] = fs.readdirSync(directoryPath, { withFileTypes: true });
+  const files: fs.Dirent[] = fs.readdirSync(directoryPath, {
+    withFileTypes: true,
+  });
 
   files.forEach((file, index) => {
-    if (excludedFolders.includes(file.name) || excludedFiles.includes(file.name)) return;
+    if (
+      excludedFolders.includes(file.name) ||
+      excludedFiles.includes(file.name)
+    )
+      return;
 
     const isLast: boolean = index === files.length - 1;
     const newPrefix: string = prefix + (isLast ? "    " : "|   ");
@@ -69,7 +81,8 @@ function generateFileTree(directoryPath: string, prefix: string = ""): string {
 
     if (
       file.isDirectory() ||
-      (allowedExtensions.includes(path.extname(file.name)) && !excludedFiles.includes(file.name))
+      (allowedExtensions.includes(path.extname(file.name)) &&
+        !excludedFiles.includes(file.name))
     ) {
       tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
 
@@ -151,7 +164,7 @@ function deleteFile(file: string): void {
 let originalPaths: string[] = [
   // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
   // ตัวอย่าง: "/Users/username/Projects/MyProject",
-  "/Users/wrpx/Desktop/REACT_WITH_GO",
+  "/Users/wrpx/Desktop/ExpressJs-CRUD",
 ];
 
 let outputFiles: string[] = originalPaths.map(processDirectory);
