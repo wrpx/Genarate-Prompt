@@ -1,5 +1,5 @@
 /**
- * Code Collector Script 
+ * Code Collector Script
  * ================================
  *
  * วิธีใช้งาน:
@@ -30,6 +30,12 @@ const allowedExtensions: string[] = [
   ".jsx",
   ".tsx",
   ".go",
+  ".sql",
+  ".properties",
+  ".yml",
+  ".yaml",
+  ".xml",
+  ".gradle",
 ];
 
 const excludedFolders: string[] = [
@@ -46,7 +52,9 @@ const readdirAsync = promisify(fs.readdir);
 const readFileAsync = promisify(fs.readFile);
 const unlinkAsync = promisify(fs.unlink);
 
-async function readFilesFromDirectory(directoryPath: string): Promise<string[]> {
+async function readFilesFromDirectory(
+  directoryPath: string
+): Promise<string[]> {
   let fileContents: string[] = [];
 
   try {
@@ -201,7 +209,7 @@ async function main() {
   let originalPaths: string[] = [
     // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
     // ตัวอย่าง: "/Users/username/Projects/MyProject",
-    "/Users/wrpx/Desktop/REACT-FRONTEND-01",
+    "/Users/wrpx/Desktop/Java-Spring-Backend",
   ];
 
   try {
