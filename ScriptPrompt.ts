@@ -34,7 +34,6 @@ const allowedExtensions: string[] = [
   ".properties",
   ".yml",
   ".yaml",
-  ".xml",
   ".gradle",
 ];
 
