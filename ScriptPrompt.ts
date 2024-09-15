@@ -1,13 +1,13 @@
 /**
- * Code Collector Script
- * ====================
+ * Code Collector Script 
+ * ================================
  *
  * วิธีใช้งาน:
  * 1. ติดตั้ง Node.js และ TypeScript บนเครื่องของคุณ
  * 2. เปิด Terminal หรือ Command Prompt ในโฟลเดอร์ที่มีไฟล์สคริปต์นี้
  * 3. แก้ไขตัวแปร 'originalPaths' ให้ชี้ไปยังโฟลเดอร์ที่คุณต้องการรวบรวมโค้ด
  * 4. คอมไพล์สคริปต์ด้วยคำสั่ง: tsc ScriptPrompt.ts
- * 5. รันสคริปต์ด้วยคำสั่ง: node ScriptPrompt.js 
+ * 5. รันสคริปต์ด้วยคำสั่ง: node ScriptPrompt.js
  *
  * คำอธิบาย:
  * - สคริปต์นี้จะรวบรวมเนื้อหาของไฟล์โค้ดทั้งหมดในโฟลเดอร์ที่กำหนด
@@ -20,6 +20,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { exec, spawn } from "child_process";
 import * as os from "os";
+import { promisify } from "util";
 
 const allowedExtensions: string[] = [
   ".js",
@@ -38,59 +39,81 @@ const excludedFolders: string[] = [
   "dist",
   ".config",
 ];
+
 const excludedFiles: string[] = ["postcss.config.js"];
 
-function readFilesFromDirectory(directoryPath: string): string[] {
+const readdirAsync = promisify(fs.readdir);
+const readFileAsync = promisify(fs.readFile);
+const unlinkAsync = promisify(fs.unlink);
+
+async function readFilesFromDirectory(directoryPath: string): Promise<string[]> {
   let fileContents: string[] = [];
 
-  fs.readdirSync(directoryPath, { withFileTypes: true }).forEach((dirent) => {
-    const filePath: string = path.join(directoryPath, dirent.name);
+  try {
+    const dirents = await readdirAsync(directoryPath, { withFileTypes: true });
+    for (const dirent of dirents) {
+      const filePath: string = path.join(directoryPath, dirent.name);
 
-    if (dirent.isDirectory() && !excludedFolders.includes(dirent.name)) {
-      fileContents = fileContents.concat(readFilesFromDirectory(filePath));
-    } else if (
-      allowedExtensions.includes(path.extname(dirent.name)) &&
-      !excludedFiles.includes(dirent.name)
-    ) {
-      let content: string = fs.readFileSync(filePath, "utf8");
-      let relativeFilePath: string = path.relative(process.cwd(), filePath);
-      content = `//${relativeFilePath}\n${content}`;
-      fileContents.push(content);
+      if (dirent.isDirectory() && !excludedFolders.includes(dirent.name)) {
+        const contents = await readFilesFromDirectory(filePath);
+        fileContents = fileContents.concat(contents);
+      } else if (
+        allowedExtensions.includes(path.extname(dirent.name)) &&
+        !excludedFiles.includes(dirent.name)
+      ) {
+        try {
+          let content: string = await readFileAsync(filePath, "utf8");
+          let relativeFilePath: string = path.relative(process.cwd(), filePath);
+          content = `// ${relativeFilePath}\n${content}`;
+          fileContents.push(content);
+        } catch (error) {
+          console.error(`ไม่สามารถอ่านไฟล์ ${filePath}: ${error}`);
+        }
+      }
     }
-  });
+  } catch (error) {
+    console.error(`ไม่สามารถอ่านโฟลเดอร์ ${directoryPath}: ${error}`);
+  }
 
   return fileContents;
 }
 
-function generateFileTree(directoryPath: string, prefix: string = ""): string {
+async function generateFileTree(
+  directoryPath: string,
+  prefix: string = ""
+): Promise<string> {
   let tree: string = "";
-  const files: fs.Dirent[] = fs.readdirSync(directoryPath, {
-    withFileTypes: true,
-  });
 
-  files.forEach((file, index) => {
-    if (
-      excludedFolders.includes(file.name) ||
-      excludedFiles.includes(file.name)
-    )
-      return;
+  try {
+    const files = await readdirAsync(directoryPath, { withFileTypes: true });
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
+      if (
+        excludedFolders.includes(file.name) ||
+        excludedFiles.includes(file.name)
+      )
+        continue;
 
-    const isLast: boolean = index === files.length - 1;
-    const newPrefix: string = prefix + (isLast ? "    " : "|   ");
-    const filePath: string = path.join(directoryPath, file.name);
+      const isLast: boolean = index === files.length - 1;
+      const newPrefix: string = prefix + (isLast ? "    " : "|   ");
+      const filePath: string = path.join(directoryPath, file.name);
 
-    if (
-      file.isDirectory() ||
-      (allowedExtensions.includes(path.extname(file.name)) &&
-        !excludedFiles.includes(file.name))
-    ) {
-      tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
+      if (
+        file.isDirectory() ||
+        (allowedExtensions.includes(path.extname(file.name)) &&
+          !excludedFiles.includes(file.name))
+      ) {
+        tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
 
-      if (file.isDirectory()) {
-        tree += generateFileTree(filePath, newPrefix);
+        if (file.isDirectory()) {
+          const subtree = await generateFileTree(filePath, newPrefix);
+          tree += subtree;
+        }
       }
     }
-  });
+  } catch (error) {
+    console.error(`ไม่สามารถสร้าง File Tree จาก ${directoryPath}: ${error}`);
+  }
 
   return tree;
 }
@@ -99,18 +122,23 @@ function createPrompt(contents: string[], fileTree: string): string {
   return contents.join("\n\n\n") + "\n\n// File Tree:\n" + fileTree;
 }
 
-function processDirectory(originalPath: string): string {
+async function processDirectory(originalPath: string): Promise<string | null> {
   const directoryPath: string = originalPath.replace(/\\\\/g, "/");
-  const fileTree: string = generateFileTree(directoryPath);
-  const fileContents: string[] = readFilesFromDirectory(directoryPath);
+  const fileTree: string = await generateFileTree(directoryPath);
+  const fileContents: string[] = await readFilesFromDirectory(directoryPath);
   const prompt: string = createPrompt(fileContents, fileTree);
   const outputFile: string = path.join(
     __dirname,
     "Output_" + path.basename(directoryPath) + ".txt"
   );
 
-  fs.writeFileSync(outputFile, prompt);
-  return outputFile;
+  try {
+    fs.writeFileSync(outputFile, prompt);
+    return outputFile;
+  } catch (error) {
+    console.error(`ไม่สามารถเขียนไฟล์ ${outputFile}: ${error}`);
+    return null;
+  }
 }
 
 function handleOutputFile(outputFile: string): void {
@@ -121,16 +149,16 @@ function handleOutputFile(outputFile: string): void {
 
     const openProcess = spawn("open", ["-a", "TextEdit", outputFile]);
 
-    openProcess.on("close", (code: number) => {
+    openProcess.on("close", async (code: number) => {
       console.log(`TextEdit ถูกปิดด้วยรหัส: ${code}`);
-      setTimeout(() => {
-        deleteFile(outputFile);
+      setTimeout(async () => {
+        await deleteFile(outputFile);
       }, 1000);
     });
 
-    process.on("SIGINT", () => {
+    process.on("SIGINT", async () => {
       console.log("\nกำลังหยุดการทำงานของสคริปต์...");
-      deleteFile(outputFile);
+      await deleteFile(outputFile);
       process.exit();
     });
   } else if (platform === "win32") {
@@ -142,16 +170,24 @@ function handleOutputFile(outputFile: string): void {
       }
     });
 
-    notepadProcess.on("exit", () => deleteFile(outputFile));
+    notepadProcess.on("exit", async () => {
+      await deleteFile(outputFile);
+    });
+
+    process.on("SIGINT", async () => {
+      console.log("\nกำลังหยุดการทำงานของสคริปต์...");
+      await deleteFile(outputFile);
+      process.exit();
+    });
   } else {
     console.log("ระบบปฏิบัติการที่ไม่รองรับ");
   }
 }
 
-function deleteFile(file: string): void {
+async function deleteFile(file: string): Promise<void> {
   try {
     if (fs.existsSync(file)) {
-      fs.unlinkSync(file);
+      await unlinkAsync(file);
       console.log(`ไฟล์ ${file} ได้ถูกลบแล้ว`);
     } else {
       console.log(`ไฟล์ ${file} ไม่พบหรือถูกลบไปแล้ว`);
@@ -161,15 +197,29 @@ function deleteFile(file: string): void {
   }
 }
 
-let originalPaths: string[] = [
-  // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
-  // ตัวอย่าง: "/Users/username/Projects/MyProject",
-  "/Users/wrpx/Desktop/ExpressJs-CRUD",
-];
+async function main() {
+  let originalPaths: string[] = [
+    // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
+    // ตัวอย่าง: "/Users/username/Projects/MyProject",
+    "/Users/wrpx/Desktop/REACT-FRONTEND-01",
+  ];
 
-let outputFiles: string[] = originalPaths.map(processDirectory);
-outputFiles.forEach(handleOutputFile);
+  try {
+    let outputFiles: (string | null)[] = await Promise.all(
+      originalPaths.map(processDirectory)
+    );
+    outputFiles.forEach((outputFile) => {
+      if (outputFile) {
+        handleOutputFile(outputFile);
+      }
+    });
+  } catch (error) {
+    console.error(`เกิดข้อผิดพลาดในกระบวนการหลัก: ${error}`);
+  }
 
-process.on("exit", () => {
-  console.log("สคริปต์จบการทำงาน กำลังคืนทรัพยากรทั้งหมด...");
-});
+  process.on("exit", () => {
+    console.log("สคริปต์จบการทำงาน กำลังคืนทรัพยากรทั้งหมด...");
+  });
+}
+
+main();
