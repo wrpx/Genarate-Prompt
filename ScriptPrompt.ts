@@ -35,6 +35,7 @@ const allowedExtensions: string[] = [
   ".yml",
   ".yaml",
   ".gradle",
+  ".env",
 ];
 
 const excludedFolders: string[] = [
@@ -43,6 +44,7 @@ const excludedFolders: string[] = [
   "build",
   "dist",
   ".config",
+  "vendor",
 ];
 
 const excludedFiles: string[] = ["postcss.config.js"];
@@ -65,7 +67,8 @@ async function readFilesFromDirectory(
         const contents = await readFilesFromDirectory(filePath);
         fileContents = fileContents.concat(contents);
       } else if (
-        allowedExtensions.includes(path.extname(dirent.name)) &&
+        (allowedExtensions.includes(path.extname(dirent.name)) ||
+          dirent.name === ".env") &&
         !excludedFiles.includes(dirent.name)
       ) {
         try {
@@ -98,24 +101,23 @@ async function generateFileTree(
       if (
         excludedFolders.includes(file.name) ||
         excludedFiles.includes(file.name)
-      )
+      ) {
         continue;
+      }
 
       const isLast: boolean = index === files.length - 1;
       const newPrefix: string = prefix + (isLast ? "    " : "|   ");
       const filePath: string = path.join(directoryPath, file.name);
 
-      if (
-        file.isDirectory() ||
-        (allowedExtensions.includes(path.extname(file.name)) &&
-          !excludedFiles.includes(file.name))
+      if (file.isDirectory()) {
+        tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
+        const subtree = await generateFileTree(filePath, newPrefix);
+        tree += subtree;
+      } else if (
+        allowedExtensions.includes(path.extname(file.name)) ||
+        file.name === ".env"
       ) {
         tree += prefix + (isLast ? "└── " : "├── ") + file.name + "\n";
-
-        if (file.isDirectory()) {
-          const subtree = await generateFileTree(filePath, newPrefix);
-          tree += subtree;
-        }
       }
     }
   } catch (error) {
@@ -208,7 +210,8 @@ async function main() {
   let originalPaths: string[] = [
     // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
     // ตัวอย่าง: "/Users/username/Projects/MyProject",
-    "/Users/wrpx/Desktop/Java-Spring-Backend",
+    "/Users/wrpx/Desktop/REACT-FRONTEND-01",
+    // "/Users/wrpx/Desktop/ReactNative_FrontEnd",
   ];
 
   try {
