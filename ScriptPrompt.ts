@@ -45,6 +45,8 @@ const excludedFolders: string[] = [
   "dist",
   ".config",
   "vendor",
+  "target",
+  "test",
 ];
 
 const excludedFiles: string[] = ["postcss.config.js"];
@@ -208,10 +210,8 @@ async function deleteFile(file: string): Promise<void> {
 
 async function main() {
   let originalPaths: string[] = [
-    // เพิ่มพาธของโฟลเดอร์ที่ต้องการรวบรวมโค้ดที่นี่
-    // ตัวอย่าง: "/Users/username/Projects/MyProject",
     "/Users/wrpx/Desktop/REACT-FRONTEND-01",
-    // "/Users/wrpx/Desktop/ReactNative_FrontEnd",
+    "/Users/wrpx/Desktop/JAVA-SPRING-BACKEND-01",
   ];
 
   try {
