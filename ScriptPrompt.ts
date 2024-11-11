@@ -210,8 +210,7 @@ async function deleteFile(file: string): Promise<void> {
 
 async function main() {
   let originalPaths: string[] = [
-    "/Users/wrpx/Desktop/REACT-FRONTEND-01",
-    "/Users/wrpx/Desktop/JAVA-SPRING-BACKEND-01",
+    "/Users/wrpx/Desktop/playtopia",
   ];
 
   try {
