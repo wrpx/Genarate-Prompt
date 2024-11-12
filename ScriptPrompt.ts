@@ -6,13 +6,14 @@
  * 1. ติดตั้ง Node.js และ TypeScript บนเครื่องของคุณ
  * 2. เปิด Terminal หรือ Command Prompt ในโฟลเดอร์ที่มีไฟล์สคริปต์นี้
  * 3. แก้ไขตัวแปร 'originalPaths' ให้ชี้ไปยังโฟลเดอร์ที่คุณต้องการรวบรวมโค้ด
- * 4. คอมไพล์สคริปต์ด้วยคำสั่ง: tsc ScriptPrompt.ts
- * 5. รันสคริปต์ด้วยคำสั่ง: node ScriptPrompt.js
+ * 4. ติดตั้ง dependencies: npm install
+ * 5. รันสคริปต์ด้วยคำสั่ง: npm start
  *
  * คำอธิบาย:
  * - สคริปต์นี้จะรวบรวมเนื้อหาของไฟล์โค้ดทั้งหมดในโฟลเดอร์ที่กำหนด
  * - สร้างโครงสร้างไฟล์ (file tree) ของโปรเจค
  * - รวมทั้งหมดเป็นไฟล์เดียวและเปิดในโปรแกรม TextEdit (macOS) หรือ Notepad (Windows)
+ * - คัดลอกเนื้อหาไปยัง clipboard โดยอัตโนมัติ
  * - หลังจากปิดโปรแกรมแก้ไขข้อความ ไฟล์ผลลัพธ์จะถูกลบโดยอัตโนมัติ
  */
 
@@ -21,6 +22,12 @@ import * as path from "path";
 import { exec, spawn } from "child_process";
 import * as os from "os";
 import { promisify } from "util";
+import clipboardy from 'clipboardy';
+import { fileURLToPath } from 'url';
+
+// กำหนด __dirname สำหรับ ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const allowedExtensions: string[] = [
   ".js",
@@ -145,9 +152,12 @@ async function processDirectory(originalPath: string): Promise<string | null> {
 
   try {
     fs.writeFileSync(outputFile, prompt);
+    // เพิ่มการคัดลอกเนื้อหาไปยัง clipboard
+    await clipboardy.write(prompt);
+    console.log('เนื้อหาถูกคัดลอกไปยัง clipboard แล้ว');
     return outputFile;
   } catch (error) {
-    console.error(`ไม่สามารถเขียนไฟล์ ${outputFile}: ${error}`);
+    console.error(`ไม่สามารถเขียนไฟล์หรือคัดลอกเนื้อหา: ${error}`);
     return null;
   }
 }
@@ -157,6 +167,7 @@ function handleOutputFile(outputFile: string): void {
 
   if (platform === "darwin") {
     console.log(`เปิดไฟล์ ${outputFile} ด้วย TextEdit`);
+    console.log('เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Command + V เพื่อวางได้');
 
     const openProcess = spawn("open", ["-a", "TextEdit", outputFile]);
 
@@ -173,6 +184,9 @@ function handleOutputFile(outputFile: string): void {
       process.exit();
     });
   } else if (platform === "win32") {
+    console.log(`เปิดไฟล์ ${outputFile} ด้วย Notepad`);
+    console.log('เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Ctrl + V เพื่อวางได้');
+    
     const command: string = `notepad.exe "${outputFile}"`;
     const notepadProcess = exec(command, (err: Error | null) => {
       if (err) {
@@ -210,18 +224,18 @@ async function deleteFile(file: string): Promise<void> {
 
 async function main() {
   let originalPaths: string[] = [
-    "/Users/wrpx/Desktop/playtopia",
+    "/Users/wrpx/Desktop/playtopia"
   ];
 
   try {
     let outputFiles: (string | null)[] = await Promise.all(
       originalPaths.map(processDirectory)
     );
-    outputFiles.forEach((outputFile) => {
+    for (const outputFile of outputFiles) {
       if (outputFile) {
         handleOutputFile(outputFile);
       }
-    });
+    }
   } catch (error) {
     console.error(`เกิดข้อผิดพลาดในกระบวนการหลัก: ${error}`);
   }

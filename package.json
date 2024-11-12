@@ -1,15 +1,16 @@
 {
   "name": "script-prompt",
   "version": "1.0.0",
-  "lockfileVersion": 3,
-  "requires": true,
-  "packages": {},
+  "type": "module",
   "scripts": {
-    "start": "ts-node ScriptPrompt.ts"
+    "start": "tsx ScriptPrompt.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.1.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "@types/node": "20.9.0",
+    "tsx": "^4.6.2",
+    "typescript": "5.2.2"
+  },
+  "dependencies": {
+    "clipboardy": "3.0.0"
   }
 }
