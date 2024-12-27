@@ -224,7 +224,7 @@ async function deleteFile(file: string): Promise<void> {
 
 async function main() {
   let originalPaths: string[] = [
-    "/Users/wrpx/Desktop/playtopia"
+    "/Users/wrpx/Desktop/Genarate-Prompt"
   ];
 
   try {
