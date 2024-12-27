@@ -22,8 +22,8 @@ import * as path from "path";
 import { exec, spawn } from "child_process";
 import * as os from "os";
 import { promisify } from "util";
-import clipboardy from 'clipboardy';
-import { fileURLToPath } from 'url';
+import clipboardy from "clipboardy";
+import { fileURLToPath } from "url";
 
 // กำหนด __dirname สำหรับ ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -56,7 +56,11 @@ const excludedFolders: string[] = [
   "test",
 ];
 
-const excludedFiles: string[] = ["postcss.config.js"];
+const excludedFiles: string[] = [
+  "postcss.config.js",
+  "App.test.js",
+  "setupTests.js",
+];
 
 const readdirAsync = promisify(fs.readdir);
 const readFileAsync = promisify(fs.readFile);
@@ -78,7 +82,9 @@ async function readFilesFromDirectory(
       } else if (
         (allowedExtensions.includes(path.extname(dirent.name)) ||
           dirent.name === ".env") &&
-        !excludedFiles.includes(dirent.name)
+        !excludedFiles.includes(dirent.name) &&
+        !dirent.name.includes(".test.") &&
+        !dirent.name.includes("test")
       ) {
         try {
           let content: string = await readFileAsync(filePath, "utf8");
@@ -154,7 +160,7 @@ async function processDirectory(originalPath: string): Promise<string | null> {
     fs.writeFileSync(outputFile, prompt);
     // เพิ่มการคัดลอกเนื้อหาไปยัง clipboard
     await clipboardy.write(prompt);
-    console.log('เนื้อหาถูกคัดลอกไปยัง clipboard แล้ว');
+    console.log("เนื้อหาถูกคัดลอกไปยัง clipboard แล้ว");
     return outputFile;
   } catch (error) {
     console.error(`ไม่สามารถเขียนไฟล์หรือคัดลอกเนื้อหา: ${error}`);
@@ -167,7 +173,7 @@ function handleOutputFile(outputFile: string): void {
 
   if (platform === "darwin") {
     console.log(`เปิดไฟล์ ${outputFile} ด้วย TextEdit`);
-    console.log('เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Command + V เพื่อวางได้');
+    console.log("เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Command + V เพื่อวางได้");
 
     const openProcess = spawn("open", ["-a", "TextEdit", outputFile]);
 
@@ -185,8 +191,8 @@ function handleOutputFile(outputFile: string): void {
     });
   } else if (platform === "win32") {
     console.log(`เปิดไฟล์ ${outputFile} ด้วย Notepad`);
-    console.log('เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Ctrl + V เพื่อวางได้');
-    
+    console.log("เนื้อหาถูกคัดลอกแล้ว คุณสามารถกด Ctrl + V เพื่อวางได้");
+
     const command: string = `notepad.exe "${outputFile}"`;
     const notepadProcess = exec(command, (err: Error | null) => {
       if (err) {
@@ -223,9 +229,7 @@ async function deleteFile(file: string): Promise<void> {
 }
 
 async function main() {
-  let originalPaths: string[] = [
-    "/Users/wrpx/Desktop/Genarate-Prompt"
-  ];
+  let originalPaths: string[] = ["/Users/wrpx/Desktop/my-app"];
 
   try {
     let outputFiles: (string | null)[] = await Promise.all(
