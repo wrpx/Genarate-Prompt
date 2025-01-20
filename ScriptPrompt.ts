@@ -54,6 +54,9 @@ const excludedFolders: string[] = [
   "vendor",
   "target",
   "test",
+  "vite",
+  "deps",
+  "deps_ssr"
 ];
 
 const excludedFiles: string[] = [
@@ -229,7 +232,7 @@ async function deleteFile(file: string): Promise<void> {
 }
 
 async function main() {
-  let originalPaths: string[] = ["/Users/wrpx/Desktop/my-app"];
+  let originalPaths: string[] = ["/Users/wrpx/Desktop/angular-crud-app"];
 
   try {
     let outputFiles: (string | null)[] = await Promise.all(
